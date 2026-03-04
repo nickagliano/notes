@@ -1,0 +1,5 @@
+frd/
+target/
+notes/
+.DS_Store
+notes.json

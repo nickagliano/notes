@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Notes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #2e2e2e;
+      --text: #e8e8e8;
+      --text-muted: #888;
+      --accent: #7c6af7;
+      --accent-dim: #5a4fd1;
+      --danger: #e05555;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --radius: 10px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Notes view ── */
+    .notes-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      flex-shrink: 0;
+    }
+
+    .notes-header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    #btn-new {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 7px 14px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #btn-new:active { background: var(--accent-dim); }
+
+    .search-wrap {
+      padding: 0 16px 12px;
+      flex-shrink: 0;
+    }
+
+    #search {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #search::placeholder { color: var(--text-muted); }
+    #search:focus { border-color: var(--accent); }
+
+    #notes-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #notes-list::-webkit-scrollbar { width: 4px; }
+    #notes-list::-webkit-scrollbar-track { background: transparent; }
+    #notes-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .note-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .note-card:active { background: var(--surface2); }
+    .note-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .note-card .preview {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .note-card .meta { font-size: 0.75rem; color: var(--text-muted); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state p { margin-top: 8px; font-size: 0.9rem; }
+
+    /* ── Note editor overlay ── */
+    #editor-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+    }
+    #editor-overlay.open { transform: translateY(0); }
+
+    .editor-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #btn-back {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px 0;
+      font-family: var(--font);
+    }
+
+    .editor-actions { margin-left: auto; display: flex; gap: 10px; }
+
+    #btn-save {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #btn-save:active { background: var(--accent-dim); }
+
+    #btn-delete {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--danger);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .editor-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      padding: 16px 20px;
+      gap: 12px;
+    }
+
+    #input-title {
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 600;
+      font-family: var(--font);
+      outline: none;
+      padding: 4px 0 10px;
+      letter-spacing: -0.02em;
+    }
+    #input-title::placeholder { color: var(--text-muted); }
+
+    #input-body {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: var(--font);
+      outline: none;
+      resize: none;
+      line-height: 1.65;
+    }
+    #input-body::placeholder { color: var(--text-muted); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="notes-header">
+    <h1>Notes</h1>
+    <button id="btn-new">+ New</button>
+  </div>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search notes…" autocomplete="off" spellcheck="false">
+  </div>
+  <div id="notes-list"></div>
+
+  <!-- Note editor overlay -->
+  <div id="editor-overlay">
+    <div class="editor-header">
+      <button id="btn-back">← Back</button>
+      <div class="editor-actions">
+        <button id="btn-delete" style="display:none">Delete</button>
+        <button id="btn-save">Save</button>
+      </div>
+    </div>
+    <div class="editor-body">
+      <input id="input-title" type="text" placeholder="Title" autocomplete="off">
+      <textarea id="input-body" placeholder="Start writing…"></textarea>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const API = '/api/notes';
+    let notes = [];
+    let currentId = null;
+    let toastTimer = null;
+
+    const $list      = document.getElementById('notes-list');
+    const $search    = document.getElementById('search');
+    const $overlay   = document.getElementById('editor-overlay');
+    const $title     = document.getElementById('input-title');
+    const $body      = document.getElementById('input-body');
+    const $btnDelete = document.getElementById('btn-delete');
+    const $toast     = document.getElementById('toast');
+
+    function relativeTime(iso) {
+      const diff = (Date.now() - new Date(iso)) / 1000;
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+      return new Date(iso).toLocaleDateString();
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function toast(msg) {
+      $toast.textContent = msg;
+      $toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => $toast.classList.remove('show'), 2000);
+    }
+
+    function renderList(query = '') {
+      const q = query.trim().toLowerCase();
+      const filtered = q
+        ? notes.filter(n => n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
+        : notes;
+
+      if (filtered.length === 0) {
+        $list.innerHTML = `<div class="empty-state"><div style="font-size:2.5rem">📝</div>
+          <p>${q ? 'No notes match.' : 'No notes yet. Tap + New to start.'}</p></div>`;
+        return;
+      }
+
+      const sorted = [...filtered].sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+      $list.innerHTML = sorted.map(n => `
+        <div class="note-card" data-id="${n.id}">
+          <h3>${escHtml(n.title || 'Untitled')}</h3>
+          <div class="preview">${escHtml(n.body)}</div>
+          <div class="meta">${relativeTime(n.updated_at)}</div>
+        </div>`).join('');
+
+      $list.querySelectorAll('.note-card').forEach(card =>
+        card.addEventListener('click', () => openEditor(card.dataset.id)));
+    }
+
+    async function loadNotes() {
+      const res = await fetch(API);
+      notes = await res.json();
+      renderList($search.value);
+    }
+
+    function openEditor(id) {
+      currentId = id || null;
+      const note = id ? notes.find(n => n.id === id) : null;
+      $title.value = note ? note.title : '';
+      $body.value  = note ? note.body  : '';
+      $btnDelete.style.display = id ? 'block' : 'none';
+      $overlay.classList.add('open');
+      if (window.innerWidth > 768) setTimeout(() => (id ? $body : $title).focus(), 300);
+    }
+
+    function closeEditor() {
+      $overlay.classList.remove('open');
+      currentId = null;
+    }
+
+    async function saveNote() {
+      const title = $title.value.trim();
+      const body  = $body.value.trim();
+      if (!title && !body) { toast('Nothing to save'); return; }
+
+      if (currentId) {
+        const res = await fetch(`${API}/${currentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || null, body: body || null }),
+        });
+        if (res.ok) {
+          notes = await fetch(API).then(r => r.json());
+          toast('Saved');
+          renderList($search.value);
+          closeEditor();
+        }
+      } else {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || 'Untitled', body }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          notes.unshift(created);
+          toast('Note created');
+          renderList($search.value);
+          closeEditor();
+        }
+      }
+    }
+
+    async function deleteNote() {
+      if (!currentId || !confirm('Delete this note?')) return;
+      const res = await fetch(`${API}/${currentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        notes = notes.filter(n => n.id !== currentId);
+        toast('Deleted');
+        renderList($search.value);
+        closeEditor();
+      }
+    }
+
+    document.getElementById('btn-new').addEventListener('click', () => openEditor(null));
+    document.getElementById('btn-back').addEventListener('click', closeEditor);
+    document.getElementById('btn-save').addEventListener('click', saveNote);
+    $btnDelete.addEventListener('click', deleteNote);
+    $search.addEventListener('input', () => renderList($search.value));
+
+    document.addEventListener('keydown', e => {
+      if ($overlay.classList.contains('open')) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
+        if (e.key === 'Escape') closeEditor();
+      }
+    });
+
+    loadNotes();
+  </script>
+</body>
+</html>
