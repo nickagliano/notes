@@ -1,9 +1,18 @@
 # notes — Customization Guide
 
 notes is a personal notes harness with CRUD and search. Ships with JSON file storage
-and a dark mobile-friendly UI. Two ports to customize.
+and a dark mobile-friendly UI. Three ports to customize.
 
 ## Ports
+
+### `APP_COLOR`
+
+**What it does:** Primary accent color for the UI — buttons, focus rings, the bottom bar label.
+**Default:** `#7c6af7` (indigo)
+**How to customize:** `APP_COLOR=#e05555 ./serve.sh`
+
+Any valid CSS hex color. The dimmed variant (`--accent-dim`) is derived automatically
+via `color-mix`, so only one variable is needed.
 
 ### `PORT`
 

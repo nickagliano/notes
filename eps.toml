@@ -14,3 +14,9 @@ customization_guide = "CUSTOMIZE.md"
 enabled = true
 start   = "HOST=$(tailscale ip -4) ./serve.sh"
 port    = 3002
+
+[ports]
+# app_color: primary accent color for the UI.
+# Any valid CSS hex color. Default is indigo (#7c6af7).
+# Set APP_COLOR env var to override.
+app_color = "#7c6af7"

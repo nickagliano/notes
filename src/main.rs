@@ -40,6 +40,7 @@ struct UpdateNote { title: Option<String>, body: Option<String> }
 #[derive(Clone)]
 struct AppState {
     notes: Arc<Mutex<Vec<Note>>>,
+    app_color: String,
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
@@ -59,7 +60,9 @@ fn save_notes(notes: &[Note]) {
 
 // ── Handlers ────────────────────────────────────────────────────────────────
 
-async fn get_notes_page() -> Html<&'static str> { Html(include_str!("notes.html")) }
+async fn get_notes_page(State(s): State<AppState>) -> Html<String> {
+    Html(include_str!("notes.html").replace("__APP_COLOR__", &s.app_color))
+}
 async fn redirect_root() -> Redirect { Redirect::permanent("/notes") }
 
 async fn list_notes(State(s): State<AppState>) -> Json<Vec<Note>> {
@@ -112,8 +115,10 @@ async fn main() {
     let bind_addr = format!("{host}:{port}");
 
     // PORT: DATA_DIR — set NOTES_DATA_DIR to move notes.json elsewhere
+    let app_color = std::env::var("APP_COLOR").unwrap_or_else(|_| "#7c6af7".to_string());
     let state = AppState {
         notes: Arc::new(Mutex::new(load_notes())),
+        app_color,
     };
 
     let app = Router::new()

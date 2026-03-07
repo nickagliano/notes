@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="__APP_COLOR__">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Notes">
   <title>Notes</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,15 +18,18 @@
       --border: #2e2e2e;
       --text: #e8e8e8;
       --text-muted: #888;
-      --accent: #7c6af7;
-      --accent-dim: #5a4fd1;
+      --accent: __APP_COLOR__;
+      --accent-dim: color-mix(in srgb, var(--accent) 75%, black);
       --danger: #e05555;
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --radius: 10px;
     }
 
-    html, body {
+    html {
       height: 100%;
+      background: color-mix(in srgb, var(--accent) 12%, #0f0f0f);
+    }
+    body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--font);
@@ -86,7 +93,7 @@
     #notes-list {
       flex: 1;
       overflow-y: auto;
-      padding: 4px 16px 24px;
+      padding: 4px 16px calc(60px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -227,7 +234,7 @@
     /* ── Toast ── */
     #toast {
       position: fixed;
-      bottom: 30px;
+      bottom: calc(60px + env(safe-area-inset-bottom));
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       background: var(--surface2);
@@ -243,6 +250,26 @@
       white-space: nowrap;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 20px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--accent) 22%, #0f0f0f);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      z-index: 80;
+    }
+    .app-name {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
@@ -272,6 +299,10 @@
   </div>
 
   <div id="toast"></div>
+
+  <div class="bottom-bar">
+    <span class="app-name">Notes</span>
+  </div>
 
   <script>
     const API = '/api/notes';
@@ -329,6 +360,7 @@
 
       $list.querySelectorAll('.note-card').forEach(card =>
         card.addEventListener('click', () => openEditor(card.dataset.id)));
+
     }
 
     async function loadNotes() {
