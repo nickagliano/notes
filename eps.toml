@@ -12,5 +12,5 @@ customization_guide = "CUSTOMIZE.md"
 
 [service]
 enabled = true
-start   = "./serve.sh"
+start   = "HOST=$(tailscale ip -4) ./serve.sh"
 port    = 3002

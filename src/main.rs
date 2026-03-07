@@ -108,7 +108,8 @@ async fn main() {
 
     // PORT: PORT — HTTP listen port, set by EPC via the PORT env var
     let port = std::env::var("PORT").unwrap_or_else(|_| "3001".to_string());
-    let bind_addr = format!("0.0.0.0:{port}");
+    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let bind_addr = format!("{host}:{port}");
 
     // PORT: DATA_DIR — set NOTES_DATA_DIR to move notes.json elsewhere
     let state = AppState {
