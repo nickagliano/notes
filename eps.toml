@@ -4,7 +4,7 @@ version     = "0.2.0"
 description = "Personal notes harness with full CRUD and search"
 authors     = ["nickagliano"]
 license     = "MIT"
-platforms   = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+platform    = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
 repository  = "https://github.com/nickagliano/notes"
 
 [eps]

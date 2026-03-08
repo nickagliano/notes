@@ -17,7 +17,7 @@ via `color-mix`, so only one variable is needed.
 ### `PORT`
 
 **What it does:** TCP port the HTTP server binds to.
-**Default:** `3001` (set by EPC via `PORT` env var)
+**Default:** `3002` (set by EPC via `PORT` env var)
 **How to customize:** `PORT=9090 ./serve.sh`
 
 ### `DATA_DIR`
@@ -33,7 +33,7 @@ The resolution is in `fn notes_file()` in `src/main.rs`.
 ```sh
 cargo build --release
 ./target/release/notes
-# open http://localhost:3001
+# open http://localhost:3002
 ```
 
 Or deploy via EPC:
