@@ -273,6 +273,9 @@
   </style>
 </head>
 <body>
+<label id="haptic-trigger" for="haptic-input" style="position:fixed;opacity:0;pointer-events:none;z-index:-1">
+  <input type="checkbox" switch="" id="haptic-input" style="all:initial;appearance:auto">
+</label>
 
   <div class="notes-header">
     <h1>Notes</h1>
@@ -397,6 +400,7 @@
         });
         if (res.ok) {
           notes = await fetch(API).then(r => r.json());
+          hapticSuccess();
           toast('Saved');
           renderList($search.value);
           closeEditor();
@@ -410,6 +414,7 @@
         if (res.ok) {
           const created = await res.json();
           notes.unshift(created);
+          hapticSuccess();
           toast('Note created');
           renderList($search.value);
           closeEditor();
@@ -422,11 +427,16 @@
       const res = await fetch(`${API}/${currentId}`, { method: 'DELETE' });
       if (res.ok) {
         notes = notes.filter(n => n.id !== currentId);
+        haptic();
         toast('Deleted');
         renderList($search.value);
         closeEditor();
       }
     }
+
+    const hapticTrigger = document.getElementById('haptic-trigger');
+    function haptic() { hapticTrigger.click(); }
+    function hapticSuccess() { hapticTrigger.click(); setTimeout(() => hapticTrigger.click(), 80); }
 
     document.getElementById('btn-new').addEventListener('click', () => openEditor(null));
     document.getElementById('btn-back').addEventListener('click', closeEditor);
