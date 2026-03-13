@@ -256,7 +256,7 @@
       position: fixed;
       bottom: 0; left: 0; right: 0;
       padding: 12px 20px;
-      padding-bottom: 12px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
       background: color-mix(in srgb, var(--accent) 22%, #0f0f0f);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       backdrop-filter: blur(20px) saturate(180%);
