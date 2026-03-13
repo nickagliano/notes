@@ -1,13 +1,13 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{StatusCode, header},
     response::{Html, IntoResponse, Redirect},
     routing::{get, put},
     Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::{fs, sync::Arc};
+use std::{fs, io::Cursor, sync::Arc};
 use tokio::sync::Mutex;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
@@ -41,6 +41,18 @@ struct UpdateNote { title: Option<String>, body: Option<String> }
 struct AppState {
     notes: Arc<Mutex<Vec<Note>>>,
     app_color: String,
+    icon_png: Arc<Vec<u8>>,
+}
+
+fn generate_icon_png(hex: &str) -> Vec<u8> {
+    let hex = hex.trim_start_matches('#');
+    let r = u8::from_str_radix(hex.get(0..2).unwrap_or("64"), 16).unwrap_or(100);
+    let g = u8::from_str_radix(hex.get(2..4).unwrap_or("64"), 16).unwrap_or(100);
+    let b = u8::from_str_radix(hex.get(4..6).unwrap_or("64"), 16).unwrap_or(100);
+    let img = image::RgbImage::from_fn(180, 180, |_, _| image::Rgb([r, g, b]));
+    let mut buf = Vec::new();
+    img.write_to(&mut Cursor::new(&mut buf), image::ImageFormat::Png).unwrap_or(());
+    buf
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
@@ -64,6 +76,23 @@ async fn get_notes_page(State(s): State<AppState>) -> Html<String> {
     Html(include_str!("notes.html").replace("__APP_COLOR__", &s.app_color))
 }
 async fn redirect_root() -> Redirect { Redirect::permanent("/notes") }
+
+async fn serve_icon(State(s): State<AppState>) -> impl IntoResponse {
+    ([(header::CONTENT_TYPE, "image/png")], (*s.icon_png).clone())
+}
+
+async fn serve_manifest(State(s): State<AppState>) -> impl IntoResponse {
+    let body = serde_json::json!({
+        "name": "Notes",
+        "short_name": "Notes",
+        "start_url": "/notes",
+        "display": "standalone",
+        "background_color": s.app_color,
+        "theme_color": s.app_color,
+        "icons": [{"src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png"}]
+    }).to_string();
+    ([(header::CONTENT_TYPE, "application/json")], body)
+}
 
 async fn list_notes(State(s): State<AppState>) -> Json<Vec<Note>> {
     Json(s.notes.lock().await.clone())
@@ -116,14 +145,18 @@ async fn main() {
 
     // PORT: DATA_DIR — set NOTES_DATA_DIR to move notes.json elsewhere
     let app_color = std::env::var("APP_COLOR").unwrap_or_else(|_| "#7c6af7".to_string());
+    let icon_png = Arc::new(generate_icon_png(&app_color));
     let state = AppState {
         notes: Arc::new(Mutex::new(load_notes())),
         app_color,
+        icon_png,
     };
 
     let app = Router::new()
         .route("/", get(redirect_root))
         .route("/notes", get(get_notes_page))
+        .route("/manifest.json", get(serve_manifest))
+        .route("/apple-touch-icon.png", get(serve_icon))
         .route("/api/notes", get(list_notes).post(create_note))
         .route("/api/notes/{id}", put(update_note).delete(delete_note))
         .layer(TraceLayer::new_for_http())
